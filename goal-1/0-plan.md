@@ -2,7 +2,7 @@
 
 Shorthand goal: **EVERETT-LIB**
 
-Status: scaffolded; no implementation stage has started.
+Status: Complete; Stages 1-12 verified.
 
 ## Big-Picture Objective
 
@@ -67,13 +67,18 @@ claims are a separate analytic edge, not a prerequisite for the algebraic core.
 
 ## Current Facts
 
-- The repository currently has no Lean project, lakefile, toolchain pin, or
-  mathlib dependency.
-- Lean `4.31.0` and Lake `5.0.0` are available through elan, but this installed
-  version is not yet a project pin and says nothing about the selected mathlib
-  revision.
+- After an explicit `git fetch --prune origin`, the clean checkout was
+  fast-forwarded from `5a54867` to `0f924f5`; local `master` and
+  `origin/master` now agree at the start of Stage 1.
+- The repository is now a Lean package. `lean-toolchain` pins Lean `v4.31.0`;
+  `lakefile.toml` and `lake-manifest.json` pin mathlib `v4.31.0` at exact commit
+  `fabf563a7c95a166b8d7b6efca11c8b4dc9d911f` plus its transitive revisions.
+  `.lake/` is ignored.
+- Direct version probes report Lean `4.31.0` (commit `68218e8`) and Lake `5.0.0`.
+  `elan show` aborts in the restricted sandbox while installing its signal
+  handler, so it is not a project verification command.
 - The source bundle contains `everett-1957/everett-1957.pdf`, nine page PNGs,
-  and a 1,260-line OCR Markdown transcription.
+  and a 1,282-line OCR Markdown transcription.
 - The OCR is visibly unreliable in equations and symbols. The page images or
   PDF must be treated as the local primary source.
 - The relevant mathematical material is concentrated in the paper's relative
@@ -83,14 +88,135 @@ claims are a separate analytic edge, not a prerequisite for the algebraic core.
 - `BUILD-PLAN.md` supplies the repository's generic Lean workflow: incremental
   leaf modules, import hygiene, focused builds, boundary scans, fold-back, and
   axiom/proof-hole auditing.
-- `BUILD-PLAN.md` is presently untracked. It is an input to this plan, not a file
-  this goal is authorized to modify.
-- There are no existing `goal-*` directories, so this scaffold is `goal-1`.
+- `BUILD-PLAN.md` and the `goal-1` scaffold are tracked in commit `0f924f5`.
+- Direct inspection of page images 3-9 confirms that the OCR Markdown is not
+  equation-safe. Known examples include equation (9), whose memory-state
+  notation is lost by the OCR; equation (27), whose square roots and exponents
+  are mangled; and page 9 case 2, where printed “not in general” is OCRed as
+  “mot in general.” Stage 1 documentation must use the page images as source.
+- `Everett.Foundations.Smoke` compiles real probes for complex inner products,
+  algebraic tensor products, finite-dimensional completeness, orthonormal
+  bases, continuous linear maps, linear isometries, linear isometry
+  equivalences, normalization, probability measures, and finite/infinite
+  product measures. `lake build Everett.Foundations.Smoke` and `lake build`
+  pass with 2,946 and 2,948 jobs respectively.
+- Mathlib `v4.31.0` does **not** provide a general completed Hilbert tensor
+  product; its tensor inner-product module explicitly lists completion as a
+  TODO. The finite-dimensional algebraic tensor product is sufficient for the
+  first milestone and receives completeness from `FiniteDimensional.complete`.
+- `docs/conventions.md`, `docs/source-map.md`, `docs/corrections.md`, and
+  `docs/scope.md` establish source and interpretation boundaries. The source
+  map covers equations (1)-(34), Rules 1-2, the frequency claims, and all three
+  page-9 cases.
+- `Everett.RelativeState.Core` defines the intrinsic finite-dimensional
+  contraction. `tensorLeft x : H₂ →L[ℂ] H₁ ⊗[ℂ] H₂` sends `y` to `x ⊗ₜ y`;
+  `conditionalMap x` is its adjoint and `conditional x Ψ` is its total,
+  possibly-zero output. `inner_conditional` is the basis-free characterization
+  and `conditional_tmul` gives the pure-tensor formula.
+- Core theorems prove linearity in `Ψ`, additivity and conjugate scaling in the
+  selected `x`, the bound `‖conditional x Ψ‖ ≤ ‖x‖ * ‖Ψ‖`, and the exact
+  intrinsic zero criterion `conditional_eq_zero_iff`.
+- `Everett.RelativeState.Normalization` exposes `normalizedConditional` only
+  with `conditional x Ψ ≠ 0`. It proves unit norm, nonzeroness, the normalization
+  formula and uniqueness, selected-vector conjugate unit-phase covariance,
+  state unit-phase covariance, and explicit `PhaseEquivalent` corollaries.
+- `Everett.RelativeState.Examples` compiles pure-tensor, zero-state,
+  orthogonal-selection, entangled two-level, normalized, and non-real phase
+  checks. Focused Stage 2 builds pass with 2,358 jobs; the full root build passes
+  with 2,951 jobs.
+- `Everett.RelativeState.Reconstruction` proves
+  `productBasis_reconstruction`, `conditional_repr_apply`,
+  `coordinateConditional_eq_conditional`,
+  `coordinateConditional_basis_independent`, `reconstruction`, and
+  `normalized_reconstruction`. Thus equations (1)-(3) have compiling corrected
+  statuses: coordinates compute the intrinsic vector, changing the complement
+  basis changes no result, and zero conditional rows are never normalized.
+- The examples now include a concrete `Complex.I` coefficient whose conditional
+  is `Complex.I • ket1`, a coordinate reconstruction of that vector, a
+  first-factor reconstruction, and a normalized reconstruction with a zero
+  branch. Focused/adjacent builds pass with 2,952 jobs and the full build passes
+  with 2,952 jobs.
+- `Everett.Measurement.Core` separates raw prescriptions from `IdealData`,
+  proves the exact record/ready norm criterion for inner-product preservation,
+  assumes orthonormal records only for exact distinguishability, and defines
+  the actual prepared-input subspace as the range of `ψ ↦ ψ ⊗ ready`.
+- `Everett.Measurement.Linearity` separates prepared-span maps, prepared
+  isometries, and full unitaries. It constructs the canonical prepared
+  isometry, proves a finite-dimensional full unitary extension, and derives
+  correlated-superposition, generic composition, spectator, and nondemolition
+  rules from linearity. Two- and three-outcome examples compile, including a
+  non-real coefficient. Equations (10)-(15) are formalized; Rules 1-2 are
+  linearity theorems, while their concrete repetition instance remains Stage 6.
+- `Everett.Records.History` represents an ordered length-`n` outcome history as
+  `Fin n → Outcome` with empty, singleton, append, lookup, and prefix-as-`take`.
+  `Encoding` uses a history-indexed orthonormal basis and constructs a fixed-
+  outcome append isometry. `Branches` keeps amplitude-weighted terms, coherent
+  vector sums, and unnormalized real norm-square data as distinct definitions.
+  Explicit orthonormality yields branch orthogonality and Pythagorean norm
+  additivity. Boolean examples and the full 2,959-job build pass.
+- `Everett.Measurement.Repeatability` constructs a controlled same-system repeat
+  isometry that preserves each eigenstate and appends the same outcome.
+  `Everett.Records.Independent` separately defines a linear branching step and
+  recursive state, then proves by induction its arbitrary-length coherent
+  history expansion with product amplitudes. Zero/one/two-step and changed-
+  basis diagnostic examples compile; the full 2,962-job build and scans pass.
+- Stage 7 API reconnaissance found no pinned-mathlib theorem directly
+  classifying additive self-maps of `NNReal`. The available route is to derive
+  monotonicity/local boundedness from nonnegativity and use the continuous
+  additive-map infrastructure, or to expose a checked additive group-completion
+  extension. Continuity will not be inserted as a hidden assumption.
+- `Everett.Weights.Additive` proves the corrected square-amplitude
+  classification for an additive real extension that is nonnegative on
+  nonnegative inputs; monotonicity and continuity are derived. Branch weight
+  additivity, positive-total normalization, finite total-one distributions,
+  sequence product weights, and product mass factorization compile. The printed
+  half-line-domain extension is explicitly assumption-qualified. The full
+  2,966-job build and Stage 7 scans pass.
+- `Everett.Probability.Frequency` proves finite product count expectation and
+  variance, a generic weighted Chebyshev theorem, the bound
+  `p(1-p)/(n ε²)`, and convergence in probability of exceptional branch mass.
+  It is formally linked to squared-amplitude sequence distributions and handles
+  `p=0`, `p=1`, `n=0`, positive tolerance, and empty outcome types. The
+  infinite-process almost-sure claim is explicitly unresolved. The clean full
+  build passes with 2,968 jobs.
+- `Everett.Records.Multiple` constructs the diagonal exact-record copy map and
+  isometry from an orthonormal history basis. `Everett.Measurement.Sequential`
+  proves the `A→B→A` change-of-basis product formula, a conditional nonzero
+  disagreement criterion, and commutation of arbitrary linear maps on distinct
+  tensor factors. Canonical-copy, normalized-superposition, and entangled Bell
+  diagnostics compile; no arbitrary-state cloning, universal disagreement, or
+  unrestricted no-signalling claim is made. The clean full build passes with
+  2,971 jobs and Stage 9 scans pass.
+- `Everett.Comparison.Collapse` defines the supported
+  `FiniteProjectiveExperiment` class and separately proves equality of coherent
+  branch versus collapse outcome masses, normalized record conditionals on
+  nonzero branches, and arbitrary finite independently repeated history masses.
+  Coherent tensor vectors and classical mass distributions remain distinct;
+  arbitrary instruments and changing-basis/adaptive sequences are excluded. The
+  clean full build passes with 2,973 jobs and Stage 10 scans pass.
+- Images 3-4 were reinspected for equations (4)-(9).
+  `Everett.Analytic.ControlledShift` constructs a finite cyclic controlled-shift
+  unitary and proves basis, superposition, and finite conditional formulas. It
+  remains outside the core root and is explicitly not a theorem about `L²`,
+  differential operators, deltas, or sharp continuous-coordinate conditioning;
+  the exact unresolved analytic obligations are documented. The optional
+  focused build passes with 2,357 jobs, the core full build remains 2,973 jobs,
+  and Stage 11 scans pass.
+- `Everett.API` is the stable finite-dimensional re-export surface;
+  `Everett.DownstreamSmoke` imports it as an external consumer, while examples,
+  audit probes, smoke diagnostics, and the optional analytic analogue remain
+  excluded. `Everett.Audit` checks 17 principal exports and reports only
+  `propext`, `Classical.choice`, and `Quot.sound`, with no project axiom. The
+  complete example matrix, optional analytic build, 2,974-job full build,
+  source-status review, proof-integrity/import/overclaim scans, and whitespace
+  checks pass. `docs/audit.md` records the claim-by-claim final disposition.
 
 ## Assumptions To Test Early
 
-- Mathlib's completed tensor product and inner-product APIs are sufficient for
-  an intrinsic partial-inner-product map in the desired generality.
+- Mathlib's algebraic tensor product and inner-product APIs are sufficient for
+  the finite-dimensional first milestone. A general completed tensor product
+  is unavailable at the pinned revision, so infinite-dimensional conditional
+  vectors remain outside the stable target unless separately constructed.
 - A finite-dimensional first milestone will avoid irrelevant analytic overhead
   while retaining every algebraic claim needed for measurements and records.
 - Finite orthonormal bases and `Fintype`-indexed families will provide a simpler
@@ -109,8 +235,10 @@ claims are a separate analytic edge, not a prerequisite for the algebraic core.
 
 ## Preliminary Architecture
 
-The exact module names are provisional until Stage 1 import/API probes compile.
-Prefer a small package root such as `Everett` with leaves along these boundaries:
+Stage 1 established `Everett.Foundations.Smoke` as a diagnostic leaf. The final
+`Everett.API` is the stable public surface and `Everett.lean` is a compatibility
+root that also privately builds diagnostics. Runtime leaves do not import the
+smoke module. The resulting dependency direction is:
 
 ```text
 Everett/
@@ -190,28 +318,28 @@ folded back here:
 
 ## Stage Index
 
-- [ ] `1-FOUNDATIONS` — pin the project, probe APIs, fix conventions, and create
+- [x] `1-FOUNDATIONS` — pin the project, probe APIs, fix conventions, and create
   source/traceability guardrails.
-- [ ] `2-CONDITIONAL` — define intrinsic unnormalized and normalized conditional
+- [x] `2-CONDITIONAL` — define intrinsic unnormalized and normalized conditional
   vectors with zero and phase behavior.
-- [ ] `3-RECONSTRUCTION` — prove coordinate formulas, basis independence,
+- [x] `3-RECONSTRUCTION` — prove coordinate formulas, basis independence,
   reconstruction, and finite examples.
-- [ ] `4-MEASUREMENT` — model exact ideal measurement maps at their distinct
+- [x] `4-MEASUREMENT` — model exact ideal measurement maps at their distinct
   linear/isometric/unitary levels and derive linearity rules.
-- [ ] `5-RECORDS` — define neutral finite histories and coherent observation
+- [x] `5-RECORDS` — define neutral finite histories and coherent observation
   branches.
-- [ ] `6-REPETITION` — prove same-system repeatability and independent-copy
+- [x] `6-REPETITION` — prove same-system repeatability and independent-copy
   sequence expansions separately.
-- [ ] `7-WEIGHTS` — characterize additive amplitude weights and build normalized
+- [x] `7-WEIGHTS` — characterize additive amplitude weights and build normalized
   branch/product distributions.
-- [ ] `8-FREQUENCY` — prove finite concentration and justified asymptotic results.
-- [ ] `9-MULTI-RECORD` — formalize agreement, communication, intervening
+- [x] `8-FREQUENCY` — prove finite concentration and justified asymptotic results.
+- [x] `9-MULTI-RECORD` — formalize agreement, communication, intervening
   measurements, and correlated noninteracting systems.
-- [ ] `10-COMPARISON` — define and prove scoped comparisons with collapse-based
+- [x] `10-COMPARISON` — define and prove scoped comparisons with collapse-based
   predictions.
-- [ ] `11-ANALYTIC-EDGE` — delimit or formalize the continuous-variable example
+- [x] `11-ANALYTIC-EDGE` — delimit or formalize the continuous-variable example
   without abusing Hilbert-space notation.
-- [ ] `12-RELEASE-AUDIT` — stabilize the API, finish traceability, run examples,
+- [x] `12-RELEASE-AUDIT` — stabilize the API, finish traceability, run examples,
   full builds, source audit, and axiom audit.
 
 ## 1-FOUNDATIONS
